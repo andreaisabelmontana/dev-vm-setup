@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dev VM Bootstrap — Built From Scratch</title>
+<meta name="description" content="An original from-scratch build of a development VM bootstrap: shell scripts and provisioning that spin up a clean, reproducible Linux dev machine on demand." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --accent:#16a34a; --accent-soft:#e7f6ec; --ink:#16201f; --muted:#5d6b69;
+    --line:#dfe5e3; --bg:#fbfcfb; --card:#ffffff;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 28px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.86em;background:var(--accent-soft);padding:.1em .4em;border-radius:4px;color:#107a37}
+  h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.15;letter-spacing:-.01em}
+  /* Header */
+  header.hero{padding:88px 0 56px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 22px}
+  h1{font-size:clamp(2.6rem,6vw,4.1rem);margin:0 0 18px}
+  .lede{font-size:1.22rem;color:var(--muted);max-width:62ch;margin:0 0 28px}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;font-size:.82rem}
+  .chip{font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--muted);background:var(--card)}
+  /* Sections */
+  section{padding:54px 0;border-bottom:1px solid var(--line)}
+  .kicker{font-family:var(--mono);font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+  h2{font-size:clamp(1.7rem,3.4vw,2.3rem);margin:0 0 20px}
+  h3{font-size:1.2rem;margin:0 0 6px}
+  p{margin:0 0 18px;max-width:68ch}
+  .muted{color:var(--muted)}
+  /* Stack grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:8px}
+  .tool{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .tool .t{font-family:var(--mono);font-size:.78rem;color:var(--accent);letter-spacing:.04em;margin-bottom:8px}
+  .tool h3{font-size:1.05rem;font-family:var(--sans);font-weight:600;margin-bottom:6px}
+  .tool p{font-size:.92rem;color:var(--muted);margin:0}
+  /* Pipeline / modules */
+  ol.flow{counter-reset:s;list-style:none;padding:0;margin:24px 0 0}
+  ol.flow li{position:relative;padding:18px 0 18px 56px;border-top:1px solid var(--line)}
+  ol.flow li:before{counter-increment:s;content:counter(s,decimal-leading-zero);position:absolute;left:0;top:18px;font-family:var(--mono);font-size:.8rem;color:var(--accent);border:1px solid var(--line);border-radius:8px;width:38px;height:38px;display:grid;place-items:center;background:var(--card)}
+  ol.flow li h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;margin:0 0 4px}
+  ol.flow li p{margin:0;font-size:.93rem;color:var(--muted)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.68rem;padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .tag.on{background:#e6f7ec;color:#1c7a43}
+  .tag.off{background:#fdecea;color:#b23b2c}
+  /* Callout */
+  .callout{background:var(--accent-soft);border:1px solid #c4e8d0;border-radius:14px;padding:24px 26px;margin-top:8px}
+  .callout p:last-child{margin:0}
+  /* Reflection list */
+  ul.learn{list-style:none;padding:0;margin:8px 0 0}
+  ul.learn li{padding:14px 0 14px 30px;border-top:1px solid var(--line);position:relative;color:var(--muted);max-width:68ch}
+  ul.learn li:before{content:"→";position:absolute;left:0;color:var(--accent);font-family:var(--mono)}
+  ul.learn li b{color:var(--ink);font-weight:600}
+  /* Footer */
+  footer{padding:48px 0 80px}
+  .credit{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px}
+  .credit .k{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  footer .fine{font-size:.8rem;color:var(--muted);margin-top:22px;text-align:center}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">From-Scratch Build · Dev Environment</p>
+    <h1>Dev VM Bootstrap</h1>
+    <p class="lede">A set of shell scripts that spin up a clean Linux virtual machine and provision it into a ready-to-work development box — the same way, every time, so "set up my dev environment" becomes one command instead of a lost afternoon.</p>
+    <div class="meta">
+      <span class="chip">Linux VM</span><span class="chip">Shell scripts</span><span class="chip">Provisioning</span>
+      <span class="chip">SSH</span><span class="chip">Idempotent</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">What it is</p>
+    <h2>A dev machine on demand</h2>
+    <p>A virtual machine is a whole computer running as software inside your real one — its own operating system, isolated from the host. It's the cleanest place to develop: you can install anything, break anything, and throw the whole thing away without touching your actual laptop. The catch is setup. A fresh VM is an empty Linux box, and turning it into a usable workspace — users, keys, packages, Docker, language tools — is tedious and easy to get subtly wrong.</p>
+    <p>I built this to automate that turning-into-a-workspace step. A handful of scripts create a lightweight Linux VM and then <i>provision</i> it: every package, permission and tweak applied in a defined order, described in code rather than typed by hand. Run it on an empty VM and you get a complete dev environment; run it again and nothing breaks.</p>
+    <div class="callout">
+      <p><b>The core idea I wanted to learn:</b> a development environment should be disposable. If provisioning is fully scripted, a broken VM isn't a crisis — you delete it and rebuild an identical one in minutes, because the machine is defined by code you can re-run.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">The stack</p>
+    <h2>What does the provisioning</h2>
+    <p class="muted">The build is a thin orchestration script wrapped around a few well-chosen tools. Here's the role each one plays.</p>
+    <div class="grid">
+      <div class="tool"><div class="t">virtualisation</div><h3>Lightweight VM</h3><p>A small, fast Linux virtual machine that runs on the host. It's the disposable box everything else is built on top of.</p></div>
+      <div class="tool"><div class="t">orchestration</div><h3>Setup script</h3><p>The single entry point. A shell script that starts the VM, gathers connection details, and kicks off provisioning in the right sequence.</p></div>
+      <div class="tool"><div class="t">provisioning</div><h3>Config management</h3><p>A provisioning tool runs ordered, declarative tasks over SSH — create the user, install packages, set permissions — so the setup is repeatable and auditable.</p></div>
+      <div class="tool"><div class="t">access</div><h3>SSH keys</h3><p>Key-based login wired up automatically, so connecting to the VM is passwordless and a friendly <code>ssh</code> alias just works.</p></div>
+      <div class="tool"><div class="t">containers</div><h3>Docker + sudo</h3><p>The target user is added to the Docker and sudo groups, so the dev box can build and run containers out of the gate.</p></div>
+      <div class="tool"><div class="t">language tools</div><h3>Python tooling</h3><p>A fast Python toolchain and per-directory environment loading, so projects pick up their own settings the moment you <code>cd</code> in.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">How it works</p>
+    <h2>From empty VM to ready box</h2>
+    <p>The setup runs as an ordered sequence, and every step is written to be safe to repeat. That property — <b>idempotence</b> — is what lets you re-run the whole thing without fear.</p>
+    <ol class="flow">
+      <li><h3>Start the VM <span class="tag on">live</span></h3><p>Boot a fresh Linux virtual machine, or reuse the existing one if it's already up.</p></li>
+      <li><h3>Find the connection <span class="tag on">live</span></h3><p>Retrieve the VM's SSH connection details automatically, so no address or port is ever copied by hand.</p></li>
+      <li><h3>Set up the key <span class="tag on">live</span></h3><p>Ensure an SSH key exists and install the public half into the VM for passwordless login.</p></li>
+      <li><h3>Create the user <span class="tag on">live</span></h3><p>Add a dedicated non-root user and grant it <code>sudo</code> and <code>docker</code> access.</p></li>
+      <li><h3>Run the playbook <span class="tag on">live</span></h3><p>Hand off to the provisioning tool, which installs packages, language tooling and system tweaks in declarative, ordered tasks.</p></li>
+      <li><h3>Snapshot &amp; restore <span class="tag off">future</span></h3><p>Saved VM snapshots for instant rollback are left as future work — ambitious builds are never quite finished.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">How it runs</p>
+    <h2>One script, one alias</h2>
+    <p>Bootstrapping is the whole point. The promise of the build is that the entire path from nothing to a working dev box is a single command — and the result is reachable by a single alias:</p>
+    <ul class="learn">
+      <li><b>Provision:</b> run the one setup script; it starts the VM, wires up SSH, creates the user, and runs the playbook end to end.</li>
+      <li><b>Idempotent re-runs:</b> something failed midway? Run the same script again — completed steps are skipped, only the missing work happens.</li>
+      <li><b>Connect:</b> when it finishes, a ready-made SSH alias drops you straight into the configured machine.</li>
+    </ul>
+    <p class="muted" style="margin-top:18px">In my rebuild I focused on the provision-and-connect path: one <code>./setup.sh</code> takes an empty VM to a Docker-and-Python-ready box you reach with a plain <code>ssh</code>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">Reflection</p>
+    <h2>What rebuilding it taught me</h2>
+    <ul class="learn">
+      <li><b>Idempotence is the headline feature.</b> A provisioning script you can re-run safely is worth ten that only work on a perfectly clean machine — real setups always fail somewhere in the middle.</li>
+      <li><b>Declarative beats imperative.</b> Describing the <i>end state</i> — "this user is in this group, this package is installed" — is clearer and more robust than scripting every individual command.</li>
+      <li><b>Access setup is half the battle.</b> Most of the fiddly work is SSH keys and permissions; get those automated and the rest of provisioning is almost easy.</li>
+      <li><b>Disposable machines change how you work.</b> Once a dev box is one command away, you stop nursing a fragile environment and start treating it as something you can rebuild any time.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="credit">
+      <div class="k">About this build</div>
+      <p style="margin:0">An original, from-scratch build by <b>Andrea</b> — written to learn how developers provision reproducible virtual machines with scripts so a dev environment can be rebuilt on demand. Plain HTML/CSS, deployed on GitHub Pages.</p>
+    </div>
+    <p class="fine">Built from scratch by Andrea · one of an ongoing series of learning builds.</p>
+  </div>
+</footer>
+</body>
+</html>
